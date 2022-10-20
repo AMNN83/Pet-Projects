@@ -2,3 +2,66 @@ import pandas as pd
 import matplotlib.pyplot as plt
 df = pd.read_csv('mosgaz-streets.csv')
 df.limit(5)
+df.info()
+cuonts_unique = df.nunique().reset_index()
+cuonts_unique
+streets_in_area = df['area'].value_counts().reset_index()
+streets_in_area
+plt.figure(figsize =(10, 3))
+plt.hist(streets_in_area['area'], bins = 20)
+plt.grid()
+plt.show()
+streets_in_area.describe()
+streets_in_okrug = df['okrug'].value_counts().reset_index()
+streets_in_okrug
+plt.figure(figsize =(10, 3))
+plt.hist(streets_in_okrug['okrug'])
+plt.grid()
+plt.show()
+streets_in_okrug.describe()
+area_in_okrug = df.groupby('okrug')[['area', 'streetname']].nunique().reset_index()
+area_in_okrug
+okrug_in_streets = df.groupby('streetname')[['area']].nunique().sort_values(by = 'area', ascending = False).reset_index()
+okrug_in_streets 
+def find_street_category (x):
+    cat_list = []
+    x_list = x.to_list()
+    for i in x_list:
+        l = str(i).split(' ')
+        for n in l:            
+            if n[0].islower():
+                cat_list.append(n)
+    return cat_list
+category_list = find_street_category(df['streetname'])
+category_list
+for i in category_list:
+    if i in ('и', 'дороги', 'железной', 'лет', 'имени'):
+        category_list.remove(i)
+category_list_unique = set(category_list)
+category_list_unique
+def street_category (x):
+    x = str(x).split(' ')
+    for i in x:
+        if i in category_list_unique:
+            return i
+    return 'иное'    
+df['street_category'] = df['streetname'].apply(street_category)
+df
+df['street_category'].value_counts().reset_index()
+plt.figure(figsize =(15, 3))
+plt.xticks(rotation = 90)
+plt.hist(df['street_category'])
+plt.grid()
+plt.show()
+cat_in_okrug = df.groupby(['okrug', 'street_category'])['streetname'].count().reset_index()
+cat_in_okrug['streetname'] = cat_in_okrug['streetname'].astype(int)
+cat_in_okrug
+cat_in_okrug_p = cat_in_okrug.pivot(index='street_category', columns='okrug', values='streetname').fillna(0)
+cat_in_okrug_p
+import seaborn as sns
+f,ax = plt.subplots(figsize=(25, 15))
+sns.set(font_scale = 1.2)
+sns.heatmap(cat_in_okrug_p, annot=True, fmt= 'g', cmap="Blues")
+ax.xaxis.set_ticks_position('top')
+plt.show()
+df.loc[(df['street_category'] == 'переулок') & (df['okrug'] == 'ЦАО')]
